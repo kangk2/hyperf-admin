@@ -9,6 +9,7 @@ use HyperfAdmin\Admin\Service\ExportService;
 use HyperfAdmin\Admin\Service\Menu;
 use HyperfAdmin\BaseUtils\Constants\ErrorCode;
 use HyperfAdmin\BaseUtils\JWT;
+use HyperfAdmin\BaseUtils\Redis;
 
 class UserController extends AdminAbstractController
 {
@@ -130,10 +131,9 @@ class UserController extends AdminAbstractController
     {
         $module = $this->request->input('module', 'default');
         $user = auth()->user();
-        $base_path = BASE_PATH . '/runtime/menu/';
-        $cache_key = $this->permission_service->getPermissionCacheKey($user['id']);
-        $cache_file = "{$base_path}{$cache_key}/{$module}.menu.{$user['id']}.cache";
-        $menu_list = file_exists($cache_file) ? require $cache_file : [];
+
+        $cache_key = 'rock_admin_menu_cache:' . md5($this->permission_service->getPermissionCacheKey($user['id']));
+        $menu_list = json_decode(Redis::get($cache_key), true);
         if (empty($menu_list)) {
             $where = [
                 'module' => $module,
@@ -154,11 +154,7 @@ class UserController extends AdminAbstractController
                 'icon',
             ], 'id');
             if (!empty($menu_list)) {
-                if (file_exists($base_path)) {
-                    rmdir_recursive($base_path);
-                }
-                mkdir($base_path . $cache_key, 0755, true);
-                file_put_contents($cache_file, '<?php return ' . var_export($menu_list, true) . ';');
+                Redis::setex($cache_key, json_encode($menu_list), 86400);
             }
         }
 
