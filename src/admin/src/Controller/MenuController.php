@@ -395,7 +395,7 @@ class MenuController extends AdminAbstractController
             $data['path'] = '#';
         }
         $data['is_menu'] = $data['type'] == 2 ? 0 : $data['is_menu'];
-        $data['permission'] = implode(',', $data['permission'] ?? []);
+        $data['permission'] = implode(',', $data['permission'] ?: []);
         $pid = array_pop($data['pid']);
         if ($pid == $id) {
             $pid = array_pop($data['pid']);
